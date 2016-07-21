@@ -1,0 +1,32 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'maven'
+
+group = 'fr.pokegotrade'
+name = 'slave'
+version = '0.0.1'
+
+description = "mineweb_bridge"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+    compile "com.google.code.gson:gson:2.5"
+    compile "io.nats.jnats:jnats:0.5.0-SNAPSHOT"
+    compileOnly "org.projectlombok:lombok:1.16.6"
+}
+
+task bundle(type: Jar) {
+    baseName = project.name + '_all'
+    from {
+    	configurations.compile.collect {
+    		it.isDirectory() ? it : zipTree(it)
+    	}
+    }
+    with jar
+}
