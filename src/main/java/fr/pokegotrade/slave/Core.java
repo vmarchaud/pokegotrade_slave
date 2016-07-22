@@ -6,8 +6,9 @@ import java.util.concurrent.TimeoutException;
 
 import com.pokegoapi.api.PokemonGo;
 import com.pokegoapi.api.pokemon.Pokemon;
-import com.pokegoapi.auth.PTCLogin;
+import com.pokegoapi.auth.PtcLogin;
 import com.pokegoapi.exceptions.LoginFailedException;
+import com.pokegoapi.exceptions.RemoteServerException;
 
 import POGOProtos.Networking.Envelopes.RequestEnvelopeOuterClass.RequestEnvelope.AuthInfo;
 import io.nats.client.Connection;
@@ -31,14 +32,14 @@ public class Core {
 		nc.subscribe("transfert", m -> {
 			try {
 				nc.publish(m.getReplyTo(),transfertPokemon(new String(m.getData(), StandardCharsets.UTF_8), 0));
-			} catch (IOException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			};
 		});
 		nc.subscribe("evolve", m -> {
 			try {
 				nc.publish(m.getReplyTo(), evolvePokemon(new String(m.getData(), StandardCharsets.UTF_8), 0));
-			} catch (IOException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			};
 		});
@@ -50,16 +51,16 @@ public class Core {
 
 	public static byte[] getProfil(String token) throws LoginFailedException{
 		OkHttpClient http = new OkHttpClient();
-		AuthInfo auth = new PTCLogin(http).login(token);
+		AuthInfo auth = new PtcLogin(http).login(token);
 		PokemonGo go = new PokemonGo(auth, http);
 
 		//renvoi que l'username
 		return go.getPlayerProfile(true).getUsername().getBytes();
 	}
 	
-	public static byte[] transfertPokemon(String token, long IDPokemon){
+	public static byte[] transfertPokemon(String token, long IDPokemon) throws LoginFailedException, RemoteServerException{
 		OkHttpClient http = new OkHttpClient();
-		AuthInfo auth = new PTCLogin(http).login(token);
+		AuthInfo auth = new PtcLogin(http).login(token);
 		PokemonGo go = new PokemonGo(auth, http);
 		
 		byte[] result = null;
@@ -73,9 +74,9 @@ public class Core {
 		
 		return result;
 	}
-	public static byte[] evolvePokemon(String token, long IDPokemon){
+	public static byte[] evolvePokemon(String token, long IDPokemon) throws LoginFailedException, RemoteServerException{
 		OkHttpClient http = new OkHttpClient();
-		AuthInfo auth = new PTCLogin(http).login(token);
+		AuthInfo auth = new PtcLogin(http).login(token);
 		PokemonGo go = new PokemonGo(auth, http);
 		
 		byte[] result = null;
