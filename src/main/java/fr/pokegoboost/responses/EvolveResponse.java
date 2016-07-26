@@ -1,10 +1,11 @@
-package fr.pokegotrade.slave.responses;
+package fr.pokegoboost.responses;
 
-import fr.pokegotrade.slave.wrapper.Pokemon;
-import fr.pokegotrade.slave.wrapper.Result;
+import fr.pokegoboost.wrapper.Pokemon;
+import fr.pokegoboost.wrapper.Result;
+import lombok.Builder;
 import lombok.Data;
 
-@Data
+@Data @Builder
 public class EvolveResponse {
 	
 	private Pokemon pokemon;

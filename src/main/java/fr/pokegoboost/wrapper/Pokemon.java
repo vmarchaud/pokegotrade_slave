@@ -1,4 +1,4 @@
-package fr.pokegotrade.slave.wrapper;
+package fr.pokegoboost.wrapper;
 
 import lombok.Data;
 
