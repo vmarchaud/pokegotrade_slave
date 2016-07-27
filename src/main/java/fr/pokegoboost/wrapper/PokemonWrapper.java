@@ -1,8 +1,9 @@
 package fr.pokegoboost.wrapper;
 
+import lombok.Builder;
 import lombok.Data;
 
-@Data
+@Data @Builder
 public class PokemonWrapper {
 	
 	private String	id;
