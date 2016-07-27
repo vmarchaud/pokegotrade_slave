@@ -9,6 +9,7 @@ import com.corundumstudio.socketio.Configuration;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.lambdaworks.redis.RedisClient;
 
 import fr.pokegoboost.bot.Action;
 import fr.pokegoboost.bot.PokeBot;
@@ -21,22 +22,28 @@ import fr.pokegoboost.endpoints.Manager;
 import fr.pokegoboost.endpoints.Order;
 import fr.pokegoboost.wrapper.BotWrapper;
 import fr.pokegoboost.wrapper.Result;
+import lombok.Getter;
 
 public class Slave {
 	
-	private SocketIOServer 	socket;
-	private final Gson		gson = new GsonBuilder().serializeNulls()
-			.setPrettyPrinting().create();
+	@Getter SocketIOServer 			socket;
+	@Getter RedisClient 			redis;
+	private final Gson				gson = new GsonBuilder().serializeNulls()
+										.setPrettyPrinting().create();
 	private Map<UUID, BotWrapper>	bots = new HashMap<UUID, BotWrapper>();
 	
 	public Slave() throws IOException {
-		CustomConfig.load(gson);
-		
-		Configuration config = new Configuration();
-	    config.setHostname("0.0.0.0");
-	    config.setPort(8042);
+		CustomConfig config = CustomConfig.load(gson);
+		config.save();
+	
+		Configuration socketconfig = new Configuration();
+		socketconfig.setHostname("0.0.0.0");
+		socketconfig.setPort(8042);
+	    
+	    redis = RedisClient.create(String.format("redis://%s@%s:%d", 
+	    		CustomConfig.REDIS_PWD, CustomConfig.REDIS_HOST, CustomConfig.REDIS_PORT));
 
-	    socket = new SocketIOServer(config);
+	    socket = new SocketIOServer(socketconfig);
 	    new Manager(socket.addNamespace("api"), this);
 	    new Order(socket.addNamespace("order"), this);
 	    new Ask(socket.addNamespace("ask"), this);

@@ -21,6 +21,7 @@ dependencies {
 	compile 'com.corundumstudio.socketio:netty-socketio:1.7.11'
 	compile 'com.github.Grover-c13:PokeGOAPI-Java:0.2'
 	compile "org.jgrapht:jgrapht-core:0.9.2"
+	compile 'biz.paluch.redis:lettuce:4.2.1.Final'
     compileOnly "org.projectlombok:lombok:1.16.6"
 }
 
