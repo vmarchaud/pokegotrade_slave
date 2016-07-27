@@ -1,10 +1,13 @@
 package fr.pokegoboost.requests;
 
+import java.util.UUID;
+
+import fr.pokegoboost.config.Account;
 import lombok.Data;
 
 @Data
 public class SpawnRequest {
 
-	private String token;
-	private String userID;
+	private Account 	account;
+	private UUID 		user;
 }

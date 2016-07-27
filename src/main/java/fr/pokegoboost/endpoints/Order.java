@@ -11,12 +11,12 @@ import fr.pokegoboost.responses.SpawnResponse;
 import fr.pokegoboost.wrapper.BotWrapper;
 import fr.pokegoboost.wrapper.Result;
 
-public class Manager {
+public class Order {
 	
 	private SocketIONamespace		api;
 	private Slave					slave;
 	
-	public Manager(SocketIONamespace api, Slave slave) {
+	public Order(SocketIONamespace api, Slave slave) {
 		this.api = api;
 		
 		api.addEventListener("spawn", SpawnRequest.class, 

@@ -7,9 +7,12 @@ public class Account {
 	
 	private EnumProvider 	provider;
 	private String 			username;
-	private String 			password;
-	private String			token;
+	private String 			refreshToken;
+	private String			accessToken;
+	
+	//config
 	private boolean			logging;
+	private Location		spawn;
 	
 	public enum EnumProvider {
 		GOOGLE, PTC;

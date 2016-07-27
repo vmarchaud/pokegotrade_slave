@@ -1,6 +1,5 @@
 package fr.pokegoboost.bot;
 
-import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -8,9 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
-import com.google.gson.JsonIOException;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.pokegoapi.api.PokemonGo;
 import com.pokegoapi.api.inventory.EggIncubator;
@@ -50,70 +50,42 @@ import fr.pokegoboost.config.Account.EnumProvider;
 import fr.pokegoboost.config.CustomConfig;
 import fr.pokegoboost.config.CustomLogger;
 import fr.pokegoboost.config.Location;
+import lombok.Getter;
 import okhttp3.OkHttpClient;
 
 public class PokeBot implements Runnable {
 
-	private PokemonGo		go;
+	@Getter
+	PokemonGo		go;
 	private Account 		account;
-	private CustomConfig 	config;
 	private CustomLogger	logger;
+	private Location		spawn;
 	
-	public SecureRandom 	rand = new SecureRandom();
+	@Getter
+	Queue<Action> queue = new ConcurrentLinkedQueue<Action>();
+	
 	private OkHttpClient 	http = new OkHttpClient();
-
-	private int xpEarned = 0;
-	private int pokemonTransfered = 0;
-	private int pokemonCatched = 0;
-	private int cachedLvl	= 0;
 	
-	private int[] requiredXP = { 0, 1000, 3000, 6000, 10000, 15000, 21000, 28000, 36000, 45000, 55000, 65000, 75000,
-            85000, 100000, 120000, 140000, 160000, 185000, 210000, 260000, 335000, 435000, 560000, 710000, 900000, 1100000,
-            1350000, 1650000, 2000000, 2500000, 3000000, 3750000, 4750000, 6000000, 7500000, 9500000, 12000000, 15000000, 20000000 };
-
-	public PokeBot(Account account, CustomConfig config) {
+	public PokeBot(Account account, CustomLogger logger) {
 		this.account = account;
-		this.config = config;
-		this.logger = new CustomLogger(account);
+		this.logger = logger;
 	}
 	
 	public void run() {
-		int		failedLoginCount = 0;
-		
-		try {
-			try {
-				auth();
-			} catch (RemoteServerException e) {
-				e.printStackTrace();
-			}
-		} catch (LoginFailedException e1) {
-			logger.important("Cant log into account attempt #" + failedLoginCount);
-			
-			// if we failed 3 times, wait 10 min
-			if (failedLoginCount == 3) {
-				logger.important("Will sleep 10 minutes to try for login again");
-				try {
-					Thread.sleep(10 * 60 * 1000);
-				} catch (InterruptedException e) { }
-				failedLoginCount = 0;
-			}
-			else
-				failedLoginCount++;
-		}
-		
+		// fault tolerant
 		while ( true ) {
-			try {
-				MapObjects objects = go.getMap().getMapObjects(config.getMap_radius());
-				getPokestops(objects.getPokestops());
-			} catch (Exception e) {
-				e.printStackTrace();
-				logger.important("Got error " + e.getMessage());
-				logger.important("Rebooting in 1 minutes ..");
-			}
+			if (queue.poll() == null)
+				continue ;
+			Action action = queue.poll();
+			Object result = action.getTask().execute(this, action.getInputs());
+			action.getCallback().callback(result);
+	
 			// sleep to avoid spamming
 			try {
 				Thread.sleep(60 * 1000);
-			} catch (InterruptedException e) { }
+			} catch (InterruptedException e) { 
+				// ignored, good night
+			}
 		}
 	}
 	
@@ -121,20 +93,12 @@ public class PokeBot implements Runnable {
 		CredentialProvider auth = null;
 		// loggin with PTC with credentials
 		if (account.getProvider() == EnumProvider.PTC)
-			auth = new PtcCredentialProvider(http, account.getUsername(), account.getPassword());
-		// loggin with google with token to put into url
-		else if (account.getProvider() == EnumProvider.GOOGLE && account.getToken() == null) 
-			auth = new GoogleCredentialProvider(http, new GoogleLoginOAuthCompleteListener());
+			auth = new PtcCredentialProvider(http, account.getUsername(), account.getRefreshToken());
 		// loggin with google refresh token
-		else if (account.getProvider() == EnumProvider.GOOGLE && account.getToken().length() > 0)
-			auth = new GoogleCredentialProvider(http, account.getToken());
+		else if (account.getProvider() == EnumProvider.GOOGLE && account.getRefreshToken().length() > 0)
+			auth = new GoogleCredentialProvider(http, account.getRefreshToken());
 		
 		go = new PokemonGo(auth, http);
-		cachedLvl = go.getPlayerProfile().getStats().getLevel();
-		logger.important("Logged into pokemon go with fresh instance");
-		Location location = config.getSpawns().get(rand.nextInt(config.getSpawns().size()));
-		logger.important(String.format("Location choosen, lat : %s and long : %s", location.getLattitude(), location.getLongitude() ));
-		go.setLocation(location.getLattitude(), location.getLongitude(), 0);
 	}
 
 	public void transfertAllPokermon() throws LoginFailedException, RemoteServerException{
@@ -151,7 +115,6 @@ public class PokeBot implements Runnable {
 					logger.log("Transfering pokemon " + pokemons.get(pokemon.getPokemonId()).getPokemonId() + " : " + pokemons.get(pokemon.getPokemonId()).transferPokemon());
 					pokemons.put(pokemon.getPokemonId(), pokemon);
 				}
-				pokemonTransfered++;
 			}
 			else
 				pokemons.put(pokemon.getPokemonId(), pokemon);
@@ -194,8 +157,6 @@ public class PokeBot implements Runnable {
 					
 					logger.log("	" + respondC.getStatus() + ", " + pokemon.getPokemonId().name() + " using " + ball);
 					
-					if (respondC.getStatus() == CatchStatus.CATCH_SUCCESS)
-						pokemonCatched++;
 				}
 				else
 					logger.log("	NO POKEBALL for " + pokemon.getPokemonId().name());
@@ -209,11 +170,11 @@ public class PokeBot implements Runnable {
 		List<Location> parkour = Parkour.buildLocationArrayFromPokestops(pokestops);
 		
 		double rawDistance = Parkour.getTotalParkour(parkour);
-		logger.log("Raw parkour: " + (int)(rawDistance) + " m in " + (int)(rawDistance / config.getSpeed()) + " secs");
+		logger.log("Raw parkour: " + (int)(rawDistance) + " m in " + (int)(rawDistance / CustomConfig.SPEED) + " secs");
 		
 		List<Location> bestParkour = Parkour.getBestParkour(Parkour.buildLocationArrayFromPokestops(pokestops));
 		double optimisedDistance = Parkour.getTotalParkour(bestParkour);
-		logger.log("Optimised parkour: " + (int)(optimisedDistance) + " m in " + (int)(optimisedDistance / config.getSpeed()) + " secs");
+		logger.log("Optimised parkour: " + (int)(optimisedDistance) + " m in " + (int)(optimisedDistance / CustomConfig.SPEED) + " secs");
 		pokestops = Parkour.buildPokestopCollection(bestParkour, pokestops);
 		
 		int cpt = 0;
@@ -228,17 +189,14 @@ public class PokeBot implements Runnable {
 			capturePokemons(go.getMap().getCatchablePokemon());
 
 			logger.log("Pokestop " + cpt + "/" + pokestops.size() + " " + result.getResult() + ", XP: " + result.getExperience());
-			xpEarned += result.getExperience();
+			
 
 			if(cpt % 30 == 0) {
 				transfertAllPokermon();
 			}
 			if (cpt % 10 == 0) {
-				showStats();
 				deleteUselessitem();
 				manageEggs();
-				if (go.getPlayerProfile().getStats().getLevel() != cachedLvl)
-					getRewards(++cachedLvl);
 			}
 		}
 	}
@@ -306,22 +264,6 @@ public class PokeBot implements Runnable {
 			logger.log("Trying to put an egg " + eggs.get(i).getEggKmWalkedTarget()  + " into the incubators result : " + result);
 		}
 	}
-
-	public void showStats() throws LoginFailedException, RemoteServerException {
-		go.getPlayerProfile().updateProfile();
-		
-		int lvl = go.getPlayerProfile().getStats().getLevel();
-        int nextXP = requiredXP[lvl] - requiredXP[lvl - 1];
-        int curLevelXP = (int)go.getPlayerProfile().getStats().getExperience() - requiredXP[lvl - 1];
-        int ratio = (int) ((double)curLevelXP / (double)nextXP * 100.0);
-		
-		logger.important("----STATS----");
-		logger.important(String.format("Account lvl %d : %d/%d (%d%%)", lvl, curLevelXP, nextXP, ratio));
-		logger.important("XP Earned: " + xpEarned);
-		logger.important("Pokemon catched: " + pokemonCatched);
-		logger.important("Pokemon transfered: " + pokemonTransfered);
-		logger.important("--------------");
-	}
 	
 	public void getRewards(int cachedLvl) throws RemoteServerException, LoginFailedException {
 		
@@ -344,11 +286,11 @@ public class PokeBot implements Runnable {
 		double firstLat = go.getLatitude();
 		double firstLon = go.getLongitude();
 		double dist = Parkour.distance(lat, firstLat, lon, firstLon);
-		int sections = (int) (dist / config.getSpeed());
+		int sections = (int) (dist / CustomConfig.SPEED);
 		double changeLat = lat - firstLat;
 		double changeLon = lon - firstLon;
 
-		logger.log("Waiting " + (int) (dist / config.getSpeed()) + " seconds to travel " + (int) (dist) + " m");
+		logger.log("Waiting " + (int) (dist / CustomConfig.SPEED) + " seconds to travel " + (int) (dist) + " m");
 
 		for(int i = 0; i < sections; i++) {
 			go.setLocation(firstLat + changeLat * sections, firstLon + changeLon * sections, 0);
@@ -373,13 +315,7 @@ public class PokeBot implements Runnable {
 
 		@Override
 		public void onTokenIdReceived(GoogleAuthTokenJson tokens) {
-			account.setToken(tokens.getRefreshToken());
-			try {
-				config.save();
-			} catch (JsonIOException | IOException e) {
-				e.printStackTrace();
-			}
+			account.setRefreshToken(tokens.getRefreshToken());
 		}
-		
 	}
 }

@@ -1,5 +1,7 @@
 package fr.pokegoboost.responses;
 
+import java.util.UUID;
+
 import fr.pokegoboost.wrapper.Result;
 import lombok.Builder;
 import lombok.Data;
@@ -7,6 +9,6 @@ import lombok.Data;
 @Data @Builder
 public class SpawnResponse {
 
-	private String	id;
+	private UUID	id;
 	private Result	result;
 }

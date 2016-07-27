@@ -12,30 +12,13 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 
 public class CustomConfig {
-	private	List<Account>	accounts;
-	private List<Location>	spawns;
-	private int				speed;
-	private int				map_radius;
-
-	private transient static Gson gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
+	public static int				SPEED = 25;
+	public static int				RADIUS = 4;
 	
-	public List<Location> getSpawns() {
-		return spawns;
-	}
+	private transient static Gson		gson;
 	
-	public List<Account> getAccounts() {
-		return accounts;
-	}
-
-	public int getSpeed() {
-		return speed;
-	}
-
-	public int getMap_radius() {
-		return map_radius;
-	}
-	
-	public static CustomConfig load() throws IOException {
+	public static CustomConfig load(Gson gso) throws IOException {
+		gson = gso;
 		return gson.fromJson(new FileReader(Paths.get("config.json").toFile()), CustomConfig.class);
 	}
 	

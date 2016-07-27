@@ -3,7 +3,7 @@ package fr.pokegoboost.wrapper;
 import lombok.Data;
 
 @Data
-public class Pokemon {
+public class PokemonWrapper {
 	
 	private String	id;
 	private int		pokemonType;	
