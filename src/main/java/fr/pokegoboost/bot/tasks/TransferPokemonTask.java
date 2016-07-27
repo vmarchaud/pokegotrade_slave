@@ -25,7 +25,7 @@ public class TransferPokemonTask implements ITask {
 			if (pk != null) {
 					try {
 						// actual data
-						results.put(id, pk.evolve());
+						results.put(id, pk.transferPokemon());
 					} catch (LoginFailedException e) {
 						results.put(id, Result.BAD_LOGIN);
 					} catch (RemoteServerException e) {
