@@ -8,8 +8,8 @@ import com.pokegoapi.exceptions.LoginFailedException;
 import com.pokegoapi.exceptions.RemoteServerException;
 
 import POGOProtos.Enums.PokemonIdOuterClass.PokemonId;
-import POGOProtos.Networking.Responses.ReleasePokemonResponseOuterClass.ReleasePokemonResponse;
 import fr.pokegoboost.bot.PokeBot;
+import fr.pokegoboost.wrapper.Result;
 
 public class TransferAllPokemonTask implements ITask{
 
@@ -24,16 +24,20 @@ public class TransferAllPokemonTask implements ITask{
 
 			if (pokemons.containsKey(pokemon.getPokemonId())) {
 				if (pokemon.getCp() <= pokemons.get(pokemon.getPokemonId()).getCp()) {
-					try {
-						results.put(pokemon.getId(), pokemon.transferPokemon());
-					} catch (LoginFailedException | RemoteServerException e) {
-						results.put(pokemon.getId(),ReleasePokemonResponse.Result.FAILED);
-					}
+						try {
+							results.put(pokemon.getId(), pokemon.transferPokemon());
+						} catch (LoginFailedException e) {
+							results.put(pokemon.getId(), Result.BAD_LOGIN);
+						} catch (RemoteServerException e) {
+							results.put(pokemon.getId(), Result.SERVER_ERROR);
+						}
 				} else {
 					try {
 						results.put(pokemons.get(pokemon.getPokemonId()).getId(), pokemons.get(pokemon.getPokemonId()).transferPokemon());
-					} catch (LoginFailedException | RemoteServerException e) {
-						results.put(pokemon.getId(),ReleasePokemonResponse.Result.FAILED);
+					} catch (LoginFailedException e) {
+						results.put(pokemon.getId(), Result.BAD_LOGIN);
+					} catch (RemoteServerException e) {
+						results.put(pokemon.getId(), Result.SERVER_ERROR);
 					}
 				}
 			}
