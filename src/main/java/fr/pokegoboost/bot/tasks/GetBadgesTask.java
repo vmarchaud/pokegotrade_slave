@@ -1,5 +1,8 @@
 package fr.pokegoboost.bot.tasks;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.pokegoapi.exceptions.LoginFailedException;
 import com.pokegoapi.exceptions.RemoteServerException;
@@ -9,13 +12,16 @@ import POGOProtos.Networking.Requests.Messages.CheckAwardedBadgesMessageOuterCla
 import POGOProtos.Networking.Requests.Messages.EquipBadgeMessageOuterClass.EquipBadgeMessage;
 import POGOProtos.Networking.Responses.CheckAwardedBadgesResponseOuterClass.CheckAwardedBadgesResponse;
 import POGOProtos.Networking.Responses.EquipBadgeResponseOuterClass.EquipBadgeResponse;
+import POGOProtos.Enums.BadgeTypeOuterClass.BadgeType;
 import POGOProtos.Networking.Requests.RequestTypeOuterClass.RequestType;
 import fr.pokegoboost.bot.PokeBot;
+import fr.pokegoboost.wrapper.Result;
 
 public class GetBadgesTask implements ITask{
 
 	@Override
 	public Object execute(PokeBot instance, Object... inputs) {
+		Map<Object, Object> results = new HashMap<Object, Object>();
 		try {
 			CheckAwardedBadgesMessage checkAwardedMsg = CheckAwardedBadgesMessage.newBuilder().build();
 			ServerRequest serverRequestCheckAwarded = new ServerRequest(RequestType.CHECK_AWARDED_BADGES, checkAwardedMsg);
@@ -29,27 +35,22 @@ public class GetBadgesTask implements ITask{
 					instance.getGo().getRequestHandler().sendServerRequests(serverRequestCheckAwarded);
 					
 					EquipBadgeResponse equipRes = EquipBadgeResponse.parseFrom(serverRequestEquip.getData());
+					results.put(badge, equipRes.getResult());
 				} catch (RemoteServerException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					results.put(badge, Result.SERVER_ERROR);
 				} catch (LoginFailedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					results.put(badge, Result.BAD_LOGIN);
 				} catch (InvalidProtocolBufferException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					results.put(badge, Result.SERVER_ERROR);
 				}
 				
 			});
 		} catch (RemoteServerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			results.put("CHECK_AWARDED_BADGE_ERROR", Result.SERVER_ERROR);
 		} catch (LoginFailedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			results.put("CHECK_AWARDED_BADGE_ERROR", Result.BAD_LOGIN);
 		} catch (InvalidProtocolBufferException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			results.put("CHECK_AWARDED_BADGE_ERROR", Result.SERVER_ERROR);
 		}
 		return null;
 	}
