@@ -25,7 +25,6 @@ public class Manager {
 				(client, request, ack) -> handleDespawn(client, request, ack));
 	}
 	
-	
 	public void handleSpawn(SocketIOClient client, SpawnRequest request, AckRequest ackRequest) {
 		BotWrapper bot = slave.spawn(request.getAccount(), request.getUser());
 		SpawnResponse response = SpawnResponse.builder().id(bot.getId()).result(Result.DONE).build();

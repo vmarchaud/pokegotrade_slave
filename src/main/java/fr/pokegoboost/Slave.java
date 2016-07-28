@@ -10,13 +10,13 @@ import com.corundumstudio.socketio.SocketIOServer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.lambdaworks.redis.RedisClient;
+import com.lambdaworks.redis.RedisURI;
 
 import fr.pokegoboost.bot.Action;
 import fr.pokegoboost.bot.PokeBot;
 import fr.pokegoboost.config.Account;
 import fr.pokegoboost.config.CustomConfig;
 import fr.pokegoboost.config.CustomLogger;
-import fr.pokegoboost.config.Location;
 import fr.pokegoboost.endpoints.Ask;
 import fr.pokegoboost.endpoints.Manager;
 import fr.pokegoboost.endpoints.Order;
@@ -26,7 +26,7 @@ import lombok.Getter;
 
 public class Slave {
 	
-	@Getter SocketIOServer 			socket;
+	private SocketIOServer 			socket;
 	@Getter RedisClient 			redis;
 	private final Gson				gson = new GsonBuilder().serializeNulls()
 										.setPrettyPrinting().create();
@@ -39,9 +39,9 @@ public class Slave {
 		Configuration socketconfig = new Configuration();
 		socketconfig.setHostname("0.0.0.0");
 		socketconfig.setPort(8042);
-	    
-	    redis = RedisClient.create(String.format("redis://%s@%s:%d", 
-	    		CustomConfig.REDIS_PWD, CustomConfig.REDIS_HOST, CustomConfig.REDIS_PORT));
+		
+	    redis = RedisClient.create(RedisURI.Builder.redis(CustomConfig.DB_HOST, CustomConfig.DB_PORT)
+	    		.withPassword(CustomConfig.DB_PWD).withDatabase(1).build());
 
 	    socket = new SocketIOServer(socketconfig);
 	    new Manager(socket.addNamespace("api"), this);
@@ -79,7 +79,9 @@ public class Slave {
 	 */
 	public Result		despawn(UUID uuid) {
 		if (bots.containsKey(uuid)) {
-			bots.get(uuid).getThead().interrupt();
+			BotWrapper bot = bots.get(uuid);
+			bot.getInstance().shutdown();
+			bot.getThead().interrupt();
 			bots.remove(uuid);
 			return Result.DONE;
 		}

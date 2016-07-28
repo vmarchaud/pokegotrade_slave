@@ -11,7 +11,7 @@ import POGOProtos.Enums.PokemonIdOuterClass.PokemonId;
 import fr.pokegoboost.bot.PokeBot;
 import fr.pokegoboost.wrapper.Result;
 
-public class TransferAllPokemonTask implements ITask{
+public class TransferWeakPokemonTask implements ITask{
 
 	@Override
 	public Object execute(PokeBot instance, Object... inputs) {

@@ -8,7 +8,6 @@ import com.pokegoapi.api.pokemon.Pokemon;
 import com.pokegoapi.exceptions.LoginFailedException;
 import com.pokegoapi.exceptions.RemoteServerException;
 
-import POGOProtos.Networking.Responses.ReleasePokemonResponseOuterClass.ReleasePokemonResponse;
 import fr.pokegoboost.bot.PokeBot;
 import fr.pokegoboost.wrapper.Result;
 
@@ -24,7 +23,6 @@ public class TransferPokemonTask implements ITask {
 			Pokemon pk = instance.getGo().getInventories().getPokebank().getPokemonById(id);
 			if (pk != null) {
 					try {
-						// actual data
 						results.put(id, pk.transferPokemon());
 					} catch (LoginFailedException e) {
 						results.put(id, Result.BAD_LOGIN);
@@ -34,7 +32,7 @@ public class TransferPokemonTask implements ITask {
 			}
 			// pokemon doesnt exist in our inventory
 			else
-				results.put(id, ReleasePokemonResponse.Result.UNRECOGNIZED);
+				results.put(id, Result.ERROR);
 				
 		});
 		return results;

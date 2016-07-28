@@ -14,9 +14,10 @@ import com.google.gson.JsonIOException;
 public class CustomConfig {
 	public static int				SPEED = 25;
 	public static int				RADIUS = 4;
-	public static String			REDIS_HOST = "localhost";
-	public static String			REDIS_PWD = "";
-	public static int				REDIS_PORT = 8989;
+	public static String			DB_HOST = "localhost";
+	public static String			DB_USR = "";
+	public static String			DB_PWD = "";
+	public static int				DB_PORT = 8989;
 	
 	private transient static Gson		gson;
 	

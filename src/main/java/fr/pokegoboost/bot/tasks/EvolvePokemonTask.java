@@ -34,7 +34,7 @@ public class EvolvePokemonTask implements ITask{
 			}
 			// pokemon doesnt exist in our inventory
 			else
-				results.put(id, ReleasePokemonResponse.Result.UNRECOGNIZED);
+				results.put(id, Result.ERROR);
 
 		});
 		return results;

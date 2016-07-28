@@ -12,7 +12,7 @@ import POGOProtos.Enums.PokemonIdOuterClass.PokemonId;
 import fr.pokegoboost.bot.PokeBot;
 import fr.pokegoboost.wrapper.Result;
 
-public class EvolveAllPokemonTask implements ITask{
+public class EvolveBestPokemonTask implements ITask{
 
 	@Override
 	public Object execute(PokeBot instance, Object... inputs) {
