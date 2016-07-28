@@ -8,7 +8,6 @@ import com.pokegoapi.api.pokemon.Pokemon;
 import com.pokegoapi.exceptions.LoginFailedException;
 import com.pokegoapi.exceptions.RemoteServerException;
 
-import POGOProtos.Networking.Responses.ReleasePokemonResponseOuterClass.ReleasePokemonResponse;
 import fr.pokegoboost.bot.PokeBot;
 import fr.pokegoboost.wrapper.Result;
 
