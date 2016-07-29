@@ -50,7 +50,7 @@ public class GetBadgesTask implements ITask{
 		} catch (LoginFailedException e) {
 			results.put("CHECK_AWARDED_BADGE_ERROR", Result.BAD_LOGIN);
 		} catch (InvalidProtocolBufferException e) {
-			results.put("CHECK_AWARDED_BADGE_ERROR", Result.SERVER_ERROR);
+			results.put("CHECK_AWARDED_BADGE_ERROR", Result.BAD_REQUEST);
 		}
 		return null;
 	}
