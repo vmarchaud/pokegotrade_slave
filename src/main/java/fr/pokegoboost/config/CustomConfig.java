@@ -18,6 +18,7 @@ public class CustomConfig {
 	public static String			DB_USR = "";
 	public static String			DB_PWD = "";
 	public static int				DB_PORT = 8989;
+	public static boolean			TELEPORT = true;
 	
 	private transient static Gson		gson;
 	

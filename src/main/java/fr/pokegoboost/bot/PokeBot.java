@@ -1,24 +1,20 @@
 package fr.pokegoboost.bot;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.pokegoapi.api.PokemonGo;
-import com.pokegoapi.api.map.fort.Pokestop;
 import com.pokegoapi.auth.CredentialProvider;
-import com.pokegoapi.auth.GoogleCredentialProvider;
-import com.pokegoapi.auth.PtcCredentialProvider;
 import com.pokegoapi.exceptions.LoginFailedException;
 import com.pokegoapi.exceptions.RemoteServerException;
+import com.pokegoapi.util.SystemTimeImpl;
+
 import fr.pokegoboost.config.Account;
-import fr.pokegoboost.config.Account.EnumProvider;
+import fr.pokegoboost.config.CustomConfig;
 import fr.pokegoboost.config.CustomLogger;
 import fr.pokegoboost.config.Location;
-import fr.pokegoboost.wrapper.StrategyWrapper;
+import fr.pokegoboost.wrapper.Strategy;
 import lombok.Getter;
 import lombok.Setter;
 import okhttp3.OkHttpClient;
@@ -36,22 +32,19 @@ public class PokeBot implements Runnable {
 	@Getter
 	Queue<Action> 			queue = Queues.newConcurrentLinkedQueue();
 	@Getter
-	List<Pokestop> 			pokestops = Lists.newArrayList();
-	@Getter
 	List<Location>			parkour	= Lists.newArrayList();
 	@Getter
 	int						index	= 0;
-	@Getter
-	Location				spawn;
-	@Getter
+	@Getter @Setter
 	boolean					running	= false;
 	@Getter 
-	List<StrategyWrapper>	strategies = Lists.newArrayList();
+	List<Strategy>			strategies = Lists.newArrayList();
+	@Getter
+	volatile boolean		location;
 	
 	public PokeBot(Account account, CustomLogger logger) {
 		this.account = account;
 		this.logger = logger;
-		this.spawn = account.getSpawn();
 		
 		walker.setLogger(logger);
 	}
@@ -62,8 +55,14 @@ public class PokeBot implements Runnable {
 			while ( true ) {
 				// move to the next position
 				if (running) {
-					walker.setTarget(parkour.get(index + 1));
-					walker.run();
+					Location loc = parkour.get(index);
+					
+					if (CustomConfig.TELEPORT)
+						go.setLocation(loc.getLattitude(), loc.getLongitude(), 1);
+					else {
+						walker.setTarget(loc);
+						walker.run();
+					}
 				}
 				
 				// When hes moving or not doing a parkour, respond to the requests
@@ -75,11 +74,8 @@ public class PokeBot implements Runnable {
 					action.getCallback().callback(result);
 				}
 				
-				// if its a parkour, loot or execute strategies
+				// if its a parkour, execute strategies
 				if (running) {
-					// if we are collecting pokestop, actually collect them
-					if (!pokestops.isEmpty())
-						pokestops.get(index).loot();
 					
 					// check for executing strategies
 					strategies.forEach(strategy -> {
@@ -91,10 +87,10 @@ public class PokeBot implements Runnable {
 					// go the next location
 					index++;
 					
-					// we are at the end, clear all and start from 0
+					// we are at the end, clear all
 					if (index == parkour.size()) {
-						running = false;
 						index = 0;
+						running = false;
 					}
 				}
 			}
@@ -105,14 +101,15 @@ public class PokeBot implements Runnable {
 	
 	public void auth() throws LoginFailedException, RemoteServerException {
 		CredentialProvider auth = null;
+		/*
 		// loggin with PTC with credentials
 		if (account.getProvider() == EnumProvider.PTC)
 			auth = new PtcCredentialProvider(http, account.getUsername(), account.getRefreshToken());
 		// loggin with google refresh token
 		else if (account.getProvider() == EnumProvider.GOOGLE && account.getRefreshToken().length() > 0)
 			auth = new GoogleCredentialProvider(http, account.getRefreshToken());
-		
-		go = new PokemonGo(auth, http);
+		*/
+		go = new PokemonGo(auth, http, new SystemTimeImpl());
 		walker.setGo(go);
 	}
 	

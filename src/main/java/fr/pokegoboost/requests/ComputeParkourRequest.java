@@ -12,5 +12,4 @@ public class ComputeParkourRequest {
 	private UUID			bot;
 	private List<Location>	parkour;
 	private boolean			optimize;
-	private boolean			fromPokestop;
 }

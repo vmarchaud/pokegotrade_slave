@@ -10,7 +10,7 @@ import fr.pokegoboost.bot.tasks.EvolveBestPokemonTask;
 import fr.pokegoboost.bot.tasks.ITask;
 import fr.pokegoboost.bot.tasks.ManageEggsTask;
 import fr.pokegoboost.bot.tasks.TransferWeakPokemonTask;
-import fr.pokegoboost.wrapper.StrategyWrapper;
+import fr.pokegoboost.wrapper.Strategy;
 
 public class StrategiesFactory {
 	
@@ -22,10 +22,10 @@ public class StrategiesFactory {
 		tasks.put(EnumStrategy.EVOLVE_BEST_POKEMON, new EvolveBestPokemonTask());
 	}
 	
-	public static List<StrategyWrapper> buildFrom(Map<EnumStrategy, Integer> request) {
-		List<StrategyWrapper> strategies = Lists.newArrayList();
+	public static List<Strategy> buildFrom(Map<EnumStrategy, Integer> request) {
+		List<Strategy> strategies = Lists.newArrayList();
 		request.entrySet().forEach(strategy -> {
-			strategies.add(new StrategyWrapper(tasks.get(strategy.getKey()), strategy.getValue()));
+			strategies.add(new Strategy(tasks.get(strategy.getKey()), strategy.getValue()));
 		});
 		return strategies;
 	}

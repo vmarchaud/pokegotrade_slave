@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data @AllArgsConstructor
-public class StrategyWrapper {
+public class Strategy {
 	
 	private ITask	task;
 	private int		interval;
