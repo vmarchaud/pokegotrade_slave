@@ -5,29 +5,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import com.corundumstudio.socketio.Configuration;
-import com.corundumstudio.socketio.SocketIOServer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.RedisURI;
+import com.rethinkdb.RethinkDB;
+import com.rethinkdb.net.Connection;
 
 import fr.pokegoboost.bot.Action;
 import fr.pokegoboost.bot.PokeBot;
 import fr.pokegoboost.config.Account;
 import fr.pokegoboost.config.CustomConfig;
 import fr.pokegoboost.config.CustomLogger;
-import fr.pokegoboost.endpoints.Ask;
-import fr.pokegoboost.endpoints.Manager;
-import fr.pokegoboost.endpoints.Order;
 import fr.pokegoboost.wrapper.BotWrapper;
 import fr.pokegoboost.wrapper.Result;
-import lombok.Getter;
 
 public class Slave {
 	
-	private SocketIOServer 			socket;
-	@Getter RedisClient 			redis;
+	private final RethinkDB 		db = RethinkDB.r;
 	private final Gson				gson = new GsonBuilder().serializeNulls()
 										.setPrettyPrinting().create();
 	private Map<UUID, BotWrapper>	bots = new HashMap<UUID, BotWrapper>();
@@ -35,18 +28,6 @@ public class Slave {
 	public Slave() throws IOException {
 		CustomConfig config = CustomConfig.load(gson);
 		config.save();
-	
-		Configuration socketconfig = new Configuration();
-		socketconfig.setHostname("0.0.0.0");
-		socketconfig.setPort(8042);
-		
-	    redis = RedisClient.create(RedisURI.Builder.redis(CustomConfig.DB_HOST, CustomConfig.DB_PORT)
-	    		.withPassword(CustomConfig.DB_PWD).withDatabase(1).build());
-
-	    socket = new SocketIOServer(socketconfig);
-	    new Manager(socket.addNamespace("api"), this);
-	    new Order(socket.addNamespace("order"), this);
-	    new Ask(socket.addNamespace("ask"), this);
 	}
 	
 	/**
@@ -99,5 +80,13 @@ public class Slave {
 			action.getCallback().callback(Result.BAD_REQUEST);
 		else
 			bots.get(bot).getInstance().getQueue().offer(action);
+	}
+	
+	/**
+	 * Get a connection to the database
+	 * @return Connection object
+	 */
+	public Connection getDb() {
+		return db.connection().db("test").hostname(CustomConfig.DB_HOST).user(CustomConfig.DB_USR, CustomConfig.DB_PWD).port(CustomConfig.DB_PORT).connect();
 	}
 }

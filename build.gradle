@@ -18,11 +18,9 @@ repositories {
 dependencies {
     compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
 	compile group: 'org.slf4j', name: 'slf4j-nop', version: '1.7.21'
-	compile 'com.corundumstudio.socketio:netty-socketio:1.7.11'
 	compile group: 'org.isuper', name: 's2-geometry-library-java', version: '0.0.1'
-	compile 'com.github.Grover-c13:PokeGOAPI-Java:a2828da'
-	compile "org.jgrapht:jgrapht-core:0.9.2"
-	compile 'biz.paluch.redis:lettuce:4.2.1.Final'
+    compile 'com.github.vmarchaud:pogoapi:v0.1.0'
+    compile group: 'com.rethinkdb', name: 'rethinkdb-driver', version: '2.3.0'
     compileOnly "org.projectlombok:lombok:1.16.6"
 }
 

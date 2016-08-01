@@ -2,8 +2,9 @@ package fr.pokegoboost.bot.tasks;
 
 import java.util.List;
 
+import org.pogoapi.api.objects.Location;
+
 import fr.pokegoboost.bot.PokeBot;
-import fr.pokegoboost.config.Location;
 import fr.pokegoboost.wrapper.Result;
 import fr.pokegoboost.wrapper.Strategy;
 

@@ -2,61 +2,66 @@ package fr.pokegoboost.bot;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.pokegoapi.api.PokemonGo;
-import com.pokegoapi.exceptions.LoginFailedException;
-import com.pokegoapi.exceptions.RemoteServerException;
-import com.pokegoapi.main.ServerRequest;
+import org.pogoapi.api.NetworkClient;
+import org.pogoapi.api.NetworkRequest;
+import org.pogoapi.api.objects.Location;
 
 import POGOProtos.Networking.Requests.Messages.PlayerUpdateMessageOuterClass.PlayerUpdateMessage;
 import POGOProtos.Networking.Requests.RequestTypeOuterClass.RequestType;
 import fr.pokegoboost.config.CustomConfig;
 import fr.pokegoboost.config.CustomLogger;
-import fr.pokegoboost.config.Location;
 import lombok.Getter;
 import lombok.Setter;
 
 public class WalkingThread extends Thread {
 	
 	@Setter Location 				target;
-	@Setter PokemonGo 				go;
+	@Setter NetworkClient 			client;
 	@Setter CustomLogger 			logger;
 	@Getter AtomicBoolean			moving;
-	
-	@Getter @Setter
-	volatile Location				location;
+	@Setter Location				current;
 	
 	@Override
 	public void run() {
-		double dist = ParkourUtils.distance(location, target);
+		double dist = distance(current, target);
 		int sections = (int) (dist / CustomConfig.SPEED);
-		double changeLat = target.getLattitude() - location.getLattitude();
-		double changeLon = target.getLongitude() - location.getLongitude();
+		double changeLat = target.getLatitude() - current.getLatitude();
+		double changeLon = target.getLongitude() - current.getLongitude();
 
 		logger.log("Waiting " + sections + " seconds to travel " + (int) (dist) + " m");
 		
 		moving.set(true);
 		for(int i = 0; i < sections; i++) {
-			
-			try {
-				location.setLattitude(location.getLattitude() + changeLat * sections);
-				location.setLongitude(location.getLongitude() + changeLon * sections);
+			current.setLatitude(current.getLatitude() + changeLat * sections);
+			current.setLongitude(current.getLongitude() + changeLon * sections);
 				
-				PlayerUpdateMessage request =  PlayerUpdateMessage.newBuilder()
-						.setLatitude(location.getLattitude()).setLongitude(location.getLongitude()).build();
-				go.getRequestHandler().sendServerRequests(new ServerRequest(RequestType.PLAYER_UPDATE, request));
+			PlayerUpdateMessage request =  PlayerUpdateMessage.newBuilder()
+						.setLatitude(current.getLatitude()).setLongitude(current.getLongitude()).build();
+			// ignore response
+			client.offerRequest(new NetworkRequest(RequestType.PLAYER_UPDATE, request, (result, data) -> { }));
 			
-			} catch (RemoteServerException | LoginFailedException e1) { 
-				// ignore this
-			}
-			
-			// move every second
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {}
 		}
 		
-		go.setLocation(location.getLattitude(), location.getLongitude(), 1);
+		current.setLongitude(target.getLongitude());
+		current.setLatitude(target.getLatitude());
 		moving.set(false);
 	}
 
+	public static double distance(Location loc1, Location loc2) {
+		return distance(loc1.getLatitude(), loc2.getLatitude(), loc1.getLongitude(), loc2.getLongitude());
+	}
+	
+	public static double distance(double lat1, double lat2, double lon1, double lon2) {
+
+		Double latDistance = Math.toRadians(lat2 - lat1);
+		Double lonDistance = Math.toRadians(lon2 - lon1);
+		Double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+				+ Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+				* Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+		
+		return Math.sqrt(Math.pow(6371 * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))) * 1000, 2));
+	}
 }

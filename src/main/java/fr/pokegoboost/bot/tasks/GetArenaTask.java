@@ -1,26 +1,22 @@
 package fr.pokegoboost.bot.tasks;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import com.annimon.stream.Collectors;
+import org.pogoapi.api.NetworkRequest;
+import org.pogoapi.api.objects.Location;
+
 import com.google.common.collect.Lists;
 import com.google.common.geometry.MutableInteger;
 import com.google.common.geometry.S2CellId;
 import com.google.common.geometry.S2LatLng;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.pokegoapi.exceptions.LoginFailedException;
-import com.pokegoapi.exceptions.RemoteServerException;
-import com.pokegoapi.main.ServerRequest;
-
 import POGOProtos.Map.Fort.FortDataOuterClass.FortData;
 import POGOProtos.Map.Fort.FortTypeOuterClass.FortType;
 import POGOProtos.Networking.Requests.RequestTypeOuterClass.RequestType;
 import POGOProtos.Networking.Requests.Messages.GetMapObjectsMessageOuterClass.GetMapObjectsMessage;
 import POGOProtos.Networking.Responses.GetMapObjectsResponseOuterClass.GetMapObjectsResponse;
 import fr.pokegoboost.bot.PokeBot;
-import fr.pokegoboost.config.Location;
-import fr.pokegoboost.wrapper.Result;
 
 public class GetArenaTask implements ITask {
 
@@ -31,7 +27,7 @@ public class GetArenaTask implements ITask {
 		GetMapObjectsMessage.Builder builder = GetMapObjectsMessage.newBuilder();
 
 		builder = GetMapObjectsMessage.newBuilder()
-					.setLatitude(current.getLattitude()).setLongitude(current.getLongitude());
+					.setLatitude(current.getLatitude()).setLongitude(current.getLongitude());
 
 		List<Long> cells = getCellIds(current, 9);
 		for (Long cell : cells) {
@@ -39,32 +35,24 @@ public class GetArenaTask implements ITask {
 			builder.addSinceTimestampMs(System.currentTimeMillis() - 1000);
 		}
 
-		ServerRequest request = new ServerRequest(RequestType.GET_MAP_OBJECTS, builder.build());
-		try {
-			instance.getGo().getRequestHandler().sendServerRequests(request);
-		} catch (RemoteServerException | LoginFailedException e1) {
-			return Result.SERVER_ERROR;
-		}
+		instance.getClient().offerRequest(new NetworkRequest(RequestType.GET_MAP_OBJECTS, builder.build(), (result, data) -> {
+			GetMapObjectsResponse response = null;
+			try {
+				response = GetMapObjectsResponse.parseFrom(data);
+			} catch (InvalidProtocolBufferException e) {
+				e.printStackTrace();
+			}
+			List<FortData> arenas = response.getMapCellsList().stream()
+					.flatMap(cell -> cell.getFortsList().stream())
+					.filter(fort -> fort.getType() == FortType.GYM)
+					.collect(Collectors.toList());
+		}));
 		
-		GetMapObjectsResponse response = null;
-		try {
-			response = GetMapObjectsResponse.parseFrom(request.getData());
-		} catch (InvalidProtocolBufferException e) {
-			return Result.SERVER_ERROR;
-		}
-		
-		List<FortData> arenas = Lists.newArrayList();
-		response.getMapCellsList().stream()
-				.flatMap(cell -> cell.getFortsList().stream())
-				.filter(fort -> fort.getType() == FortType.GYM)
-				.forEach(arena -> arenas.add(arena));
-		
-
 		return null;
 	}
 	
 	public List<Long> getCellIds(Location loc, int width) {
-		S2LatLng latLng = S2LatLng.fromDegrees(loc.getLattitude(), loc.getLongitude());
+		S2LatLng latLng = S2LatLng.fromDegrees(loc.getLatitude(), loc.getLongitude());
 		S2CellId cellId = S2CellId.fromLatLng(latLng).parent(15);
 
 		MutableInteger index = new MutableInteger(0);

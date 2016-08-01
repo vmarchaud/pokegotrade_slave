@@ -2,18 +2,18 @@ package fr.pokegoboost.bot;
 
 import java.util.List;
 import java.util.Queue;
+
+import org.pogoapi.api.NetworkClient;
+import org.pogoapi.api.objects.Location;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
-import com.pokegoapi.api.PokemonGo;
-import com.pokegoapi.auth.CredentialProvider;
-import com.pokegoapi.exceptions.LoginFailedException;
-import com.pokegoapi.exceptions.RemoteServerException;
-import com.pokegoapi.util.SystemTimeImpl;
+import com.rethinkdb.RethinkDB;
+import com.rethinkdb.net.Connection;
 
 import fr.pokegoboost.config.Account;
 import fr.pokegoboost.config.CustomConfig;
 import fr.pokegoboost.config.CustomLogger;
-import fr.pokegoboost.config.Location;
 import fr.pokegoboost.wrapper.Strategy;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,9 +26,11 @@ public class PokeBot implements Runnable {
 	
 	private Account 		account;
 	private CustomLogger	logger;
+
+	private final RethinkDB 		db = RethinkDB.r;
 	
 	@Getter
-	PokemonGo				go;
+	NetworkClient			client;
 	@Getter
 	Queue<Action> 			queue = Queues.newConcurrentLinkedQueue();
 	@Getter
@@ -57,9 +59,10 @@ public class PokeBot implements Runnable {
 				if (running) {
 					Location loc = parkour.get(index);
 					
-					if (CustomConfig.TELEPORT)
-						go.setLocation(loc.getLattitude(), loc.getLongitude(), 1);
+					if (CustomConfig.TELEPORT || index == 0)
+						client.updateLocation(loc);
 					else {
+						walker.setCurrent(parkour.get(index - 1));
 						walker.setTarget(loc);
 						walker.run();
 					}
@@ -99,22 +102,20 @@ public class PokeBot implements Runnable {
 		}
 	}
 	
-	public void auth() throws LoginFailedException, RemoteServerException {
-		CredentialProvider auth = null;
-		/*
-		// loggin with PTC with credentials
-		if (account.getProvider() == EnumProvider.PTC)
-			auth = new PtcCredentialProvider(http, account.getUsername(), account.getRefreshToken());
-		// loggin with google refresh token
-		else if (account.getProvider() == EnumProvider.GOOGLE && account.getRefreshToken().length() > 0)
-			auth = new GoogleCredentialProvider(http, account.getRefreshToken());
-		*/
-		go = new PokemonGo(auth, http, new SystemTimeImpl());
-		walker.setGo(go);
+	public void auth() {
+		
 	}
 	
 	public void shutdown() {
 		logger.log("Shutdown request");
 		walker.interrupt();
+	}
+	
+	/**
+	 * Get a connection to the database
+	 * @return Connection object
+	 */
+	public Connection getDb() {
+		return db.connection().db("test").hostname(CustomConfig.DB_HOST).user(CustomConfig.DB_USR, CustomConfig.DB_PWD).port(CustomConfig.DB_PORT).connect();
 	}
 }

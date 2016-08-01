@@ -12,7 +12,6 @@ public class Account {
 	
 	//config
 	private boolean			logging;
-	private Location		spawn;
 	
 	public enum EnumProvider {
 		GOOGLE, PTC;
